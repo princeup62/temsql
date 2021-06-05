@@ -1,0 +1,491 @@
+USE [MMMag]
+GO
+/****** Object:  StoredProcedure [PKG_SELECT].[EXPORT_GATE_IN_CONTAINER_BY_CONT_NO]    Script Date: 6/5/2021 8:25:05 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+-- =============================================
+-- Author:		Gnanesh A.N
+-- Create date: 20-jun-2010
+-- Description:	EXPORT_GATE_IN_CONTAINER
+-- =============================================
+ALTER PROCEDURE [PKG_SELECT].[EXPORT_GATE_IN_CONTAINER_BY_CONT_NO]
+(@CONT_NO VARCHAR(20),
+@LOCATION_ID INT)							
+AS
+SELECT [GATE_PASS_NO],
+	PKG_FUNCTIONS.TO_CHAR([IN_DATE_TIME]) [IN_DATE_TIME],
+	[LINE_ID],
+	[CHA_ID],
+	[AGENT_ID],
+	[EXPORTER],
+	[TRUCK_NO],
+	[DRIVER_NAME],
+	[CONT_NO],
+	[CONT_REF_ID],
+	[GROSS_WT],
+	[PKG_TYPE],
+	[PKG_NOS],
+	[CARGO_TYPE],
+	[CHANGED_BY],
+	[CHANGE_DATE],
+	[CONT_SIZE],
+	[SEAL_NO_1],
+	[CONT_NOTE],
+	[TRANSPORTER],
+	[DAMAGE_DETAILS],
+	[PLUG_REQUIREMENT],
+	[SEAL_NO_2],
+	[LOADED_FROM],
+	[CONT_TYPE],
+	[MOVEMENT_TYPE],
+	[MTY_CONT_WT],
+	[BUFFER_CODE],
+	[MOVEMENT_BY],
+	[location_id],
+	[DAMAGE_TYPE],
+	DAMAGE_CONDITION,
+	FACTORY_ID,
+	NEXT_LOCATION,
+	INVOICE_NO,
+	PKG_FUNCTIONS.TO_CHAR(INVOICE_DATE)INVOICE_DATE
+  FROM [EXPORT].[EXPORT_GATE_IN_CONTAINER]
+ WHERE CONT_NO = @CONT_NO
+	AND LOCATION_ID = @LOCATION_ID;
+
+
+
+
+---------------------------------------------------------------------
+
+
+
+
+
+
+-----------------------------------------------------------------------
+
+
+
+
+
+
+USE [MMMag]
+GO
+/****** Object:  StoredProcedure [PKG_INSERT].[EXPORT_GATE_IN_CONTAINER_FACT_STUFF]    Script Date: 6/5/2021 8:28:58 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+-- =============================================
+-- Author:		Gnanesh A.N
+-- Create date: 19-jun-2010
+-- Description:	EXPORT_GATE_IN_CONTAINER
+-- =============================================
+ALTER PROCEDURE [PKG_INSERT].[EXPORT_GATE_IN_CONTAINER_FACT_STUFF](
+                            @GATE_PASS_NO				INT OUTPUT,
+                            @IN_DATE_TIME				VARCHAR(100) OUTPUT,
+                            @LINE_ID				INT,
+                            @CHA_ID				INT,
+                            @AGENT_ID				INT,
+                            @EXPORTER				VARCHAR(100),
+                            @TRUCK_NO				VARCHAR(15),
+                            @DRIVER_NAME				VARCHAR(50),
+                            @CONT_NO				VARCHAR(20),
+                            @CONT_REF_ID				INT OUTPUT ,
+                            @GROSS_WT				NUMERIC(18,3),
+                            @PKG_TYPE				VARCHAR(1),
+                            @PKG_NOS				NUMERIC(18,3),
+                            @CARGO_TYPE				VARCHAR(1),
+                            @CHANGED_BY				VARCHAR(100),
+                            @CHANGE_DATE				VARCHAR(100),
+                            @CONT_SIZE				VARCHAR(10),
+                            @SEAL_NO_1				VARCHAR(10),
+                            @CONT_NOTE				VARCHAR(100),
+                            @TRANSPORTER				VARCHAR(50),
+                            @DAMAGE_DETAILS				VARCHAR(100),
+                            @PLUG_REQUIREMENT				VARCHAR(1),
+                            @SEAL_NO_2				VARCHAR(20),
+                            @LOADED_FROM				VARCHAR(50),
+                            @CONT_TYPE				VARCHAR(10),
+                            @MOVEMENT_TYPE				VARCHAR(1),
+                            @MTY_CONT_WT				NUMERIC(18,3),
+                            @BUFFER_CODE				VARCHAR(20),
+                            @MOVEMENT_BY				VARCHAR(1),
+                            @location_id				INT,
+							@DAMAGE_TYPE				VARCHAR(1),
+							@DAMAGE_CONDITION VARCHAR(1),
+							@FACTORY_ID  INT,
+							@NEXT_LOCATION		VARCHAR(20), --ADDED BY BHUSHAN ON 25-07-2015
+							@INVOICE_NO VARCHAR(20),
+							@INVOICE_DATE VARCHAR(20),
+							@SHIPPER_ID INT,
+                            @ERRMSG VARCHAR(100)				OUTPUT)
+AS
+BEGIN
+	
+	EXECUTE @GATE_PASS_NO = [Master].[SEQUENCE_NEXTVAL] 'GATE_PASS_NO'
+	EXECUTE @CONT_REF_ID = [Master].[SEQUENCE_NEXTVAL] 'CONT_REF_ID'
+	SET   @IN_DATE_TIME =PKG_FUNCTIONS.TO_CHAR(GETDATE())
+
+	DECLARE @CNT INT
+	SET @CNT =0
+	SET @CNT = (SELECT COUNT(*) FROM  EXPORT.EXPORT_GATE_IN_CONTAINER  G inner join EXPORT.EXPORT_CONTAINER_DETAILS C ON G.CONT_REF_ID= C.CONT_REF_ID  WHERE G.CONT_NO = @CONT_NO AND C.OUT_DATE IS NULL)
+	
+ 
+	 IF @CNT >0 
+	 BEGIN
+	 SET @ERRMSG = 'Container Already in Yard'
+	 RETURN
+	 END
+
+	INSERT INTO EXPORT.EXPORT_GATE_IN_CONTAINER (
+             GATE_PASS_NO,
+             IN_DATE_TIME,
+             LINE_ID,
+             CHA_ID,
+             AGENT_ID,
+             EXPORTER,
+             TRUCK_NO,
+             DRIVER_NAME,
+             CONT_NO,
+             CONT_REF_ID,
+             GROSS_WT,
+             PKG_TYPE,
+             PKG_NOS,
+             CARGO_TYPE,
+             CHANGED_BY,
+             CHANGE_DATE,
+             CONT_SIZE,
+             SEAL_NO_1,
+             CONT_NOTE,
+             TRANSPORTER,
+             DAMAGE_DETAILS,
+             PLUG_REQUIREMENT,
+             SEAL_NO_2,
+             LOADED_FROM,
+             CONT_TYPE,
+             MOVEMENT_TYPE,
+             MTY_CONT_WT,
+             BUFFER_CODE,
+             MOVEMENT_BY,
+             location_id,
+			 DAMAGE_TYPE,
+			 DAMAGE_CONDITION,
+			 FACTORY_ID
+			 ,NEXT_LOCATION --ADDED BY BHUSHAN ON 25-07-2015
+			 ,INVOICE_NO
+			 ,INVOICE_DATE
+			 ,SHIPPER_ID 
+ ) VALUES (
+             @GATE_PASS_NO,
+             GETDATE(),
+             @LINE_ID,
+             @CHA_ID,
+             @AGENT_ID,
+             @EXPORTER,
+             @TRUCK_NO,
+             @DRIVER_NAME,
+             @CONT_NO,
+             @CONT_REF_ID,
+             @GROSS_WT,
+             @PKG_TYPE,
+             @PKG_NOS,
+             @CARGO_TYPE,
+             @CHANGED_BY,
+             GETDATE(),
+             @CONT_SIZE,
+             @SEAL_NO_1,
+             @CONT_NOTE,
+             @TRANSPORTER,
+             @DAMAGE_DETAILS,
+             @PLUG_REQUIREMENT,
+             @SEAL_NO_2,
+             @LOADED_FROM,
+             @CONT_TYPE,
+             @MOVEMENT_TYPE,
+             @MTY_CONT_WT,
+             @BUFFER_CODE,
+             @MOVEMENT_BY,
+             @location_id,
+			 @DAMAGE_TYPE,
+			 @DAMAGE_CONDITION,
+			 @FACTORY_ID 
+			 ,@NEXT_LOCATION --ADDED BY BHUSHAN ON 25-07-2015
+			 ,@INVOICE_NO
+			 ,PKG_FUNCTIONS.TO_DATE(@INVOICE_DATE)
+			 ,@SHIPPER_ID
+             )
+             
+             
+             
+    --ADDED BY SANDEEP PATIL
+    
+     -- added for PRE_GATE_IN_FACTORY_STUFF_CONTAINER       
+       --UPDATE Export .PRE_GATE_IN_FACTORY_STUFF_CONTAINER 
+	      --SET            
+       --      WORK_ORDER_NO=@GATE_PASS_NO,
+       --      WORK_ORDER_DATE= GETDATE(),
+       --      CONT_REF_ID=ISnULL(@CONT_REF_ID,0) --ADDED BY BHUSHAN ON 10-07-2015			 
+       --    where CONT_NO=@CONT_NO and
+       --         LOCATION_ID=@LOCATION_ID 
+       --         and GATE_IN_TYPE='F'
+       --         and WORK_ORDER_NO is null;
+    -- end 
+    
+    
+             
+  --Added by Lata on 6 jan 2014           
+BEGIN TRY
+
+DECLARE @TRANSACTION_NO INT 
+
+EXECUTE PKG_INSERT.GATE_IN_EMPTY_TRUCKS_TRANS_NEW @TRANSACTION_NO 
+            ,@TRUCK_NO
+            ,'F' 
+            ,@GATE_PASS_NO
+			,NULL
+            ,@CHANGED_BY
+            ,@DRIVER_NAME  
+			,@LOCATION_ID
+			,@ERRMSG
+
+END TRY
+BEGIN CATCH
+
+END CATCH
+
+
+----- update the gate In date of Container----
+
+UPDATE EXPORT.exp_wo_factory_stuff_CONTAINER_details
+  SET GATE_IN_DATE=GETDATE()
+ WHERE CONT_REF_ID=  @CONT_REF_ID
+  AND LOCATION_ID = @LOCATION_ID
+--ADDED BY RUPALI SHINDE
+IF isnull(@GATE_PASS_NO,0) > 0 
+	BEGIN 
+		BEGIN TRY
+			DECLARE  @REFERENCE_ID  NUMERIC(18,3)
+			DECLARE  @REF_MODE  VARCHAR(1)
+			DECLARE  @PROCESS_ID  VARCHAR(50) 
+			DECLARE  @PROCESS_DATE  VARCHAR(100)
+			DECLARE  @PROCESS_BY  VARCHAR(30)
+			DECLARE  @PROCESS_REF_ID  NUMERIC(18,3)
+			DECLARE  @HISTORY_ID  INT  
+			DECLARE  @SEQ_NO  NUMERIC(18,3)
+			DECLARE  @EVENT_REMARKS  VARCHAR(500)
+			DECLARE  @AGENT_REFERENCE  VARCHAR(10)
+			
+
+			SET @REF_MODE = 'E'
+			SET @REFERENCE_ID =  @CONT_REF_ID
+			SET @PROCESS_ID = 'FACTORY STUFF GATEIN'
+			SET @PROCESS_DATE = GETDATE()
+			SET @PROCESS_BY = @CHANGED_BY
+			SET @PROCESS_REF_ID = @GATE_PASS_NO
+
+			SET @EVENT_REMARKS = 'FACTORY STUFF GATEIN FOR CONTAINER : ' + @CONT_NO
+
+			EXECUTE PKG_INSERT.CONTAINER_HISTORY @CONT_NO,
+			@CONT_SIZE,
+			@REFERENCE_ID,
+			@REF_MODE,
+			@PROCESS_ID,
+			@PROCESS_DATE,
+			@PROCESS_BY,
+			@PROCESS_REF_ID,
+			@HISTORY_ID,
+			@LINE_ID,
+			@AGENT_ID,
+			@SEQ_NO,
+			@EVENT_REMARKS,
+			@AGENT_REFERENCE,
+			@LOCATION_ID,
+			@ERRMSG
+		END TRY
+		BEGIN CATCH
+			SELECT 
+				ERROR_NUMBER() AS ErrorNumber
+				,ERROR_MESSAGE() AS ErrorMessage;
+		END CATCH
+END
+
+
+END
+
+---------------------------------------------------------------
+--------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+----------------------------------------------------------------
+
+USE [MMMag]
+GO
+/****** Object:  StoredProcedure [pkg_update].[EXPORT_GATE_IN_CONTAINER]    Script Date: 6/5/2021 8:30:42 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+-- =============================================
+-- Author:		Gnanesh A.N
+-- Create date: 19-jun-2010
+-- Description:	EXPORT_GATE_IN_CONTAINER
+-- =============================================
+ALTER PROCEDURE [pkg_update].[EXPORT_GATE_IN_CONTAINER](
+                            @GATE_PASS_NO				INT,
+                            @IN_DATE_TIME				VARCHAR(100),
+                            @LINE_ID				INT,
+                            @CHA_ID				INT,
+                            @AGENT_ID				INT,
+                            @EXPORTER				VARCHAR(100),
+                            @TRUCK_NO				VARCHAR(15),
+                            @DRIVER_NAME				VARCHAR(50),
+                            @CONT_NO				VARCHAR(20),
+                            @CONT_REF_ID				INT,
+                            @GROSS_WT				NUMERIC(18,3),
+                            @PKG_TYPE				VARCHAR(1),
+                            @PKG_NOS				NUMERIC(18,3),
+                            @CARGO_TYPE				VARCHAR(1),
+                            @CHANGED_BY				VARCHAR(100),
+                            @CHANGE_DATE				VARCHAR(100),
+                            @CONT_SIZE				VARCHAR(10),
+                            @SEAL_NO_1				VARCHAR(10),
+                            @CONT_NOTE				VARCHAR(100),
+                            @TRANSPORTER				VARCHAR(50),
+                            @DAMAGE_DETAILS				VARCHAR(100),
+                            @PLUG_REQUIREMENT				VARCHAR(1),
+                            @SEAL_NO_2				VARCHAR(20),
+                            @LOADED_FROM				VARCHAR(50),
+                            @CONT_TYPE				VARCHAR(10),
+                            @MOVEMENT_TYPE				VARCHAR(1),
+                            @MTY_CONT_WT				NUMERIC(18,3),
+                            @BUFFER_CODE				VARCHAR(20),
+                            @MOVEMENT_BY				VARCHAR(1),
+                            @location_id				INT,
+							@DAMAGE_TYPE				VARCHAR(1),
+							@DAMAGE_CONDITION VARCHAR(1),
+							@FACTORY_ID  INT,
+							@INVOICE_NO VARCHAR(20),
+							@INVOICE_DATE VARCHAR(20),
+							@SHIPPER_ID INT,
+							@ERRMSG VARCHAR(100)				OUTPUT)
+AS
+BEGIN
+	IF @GATE_PASS_NO IS NULL 
+		BEGIN
+		SET @ERRMSG = 'GATE_PASS_NO is Blank'
+		RETURN
+		END
+	
+	
+	UPDATE EXPORT.EXPORT_GATE_IN_CONTAINER
+	      SET
+             LINE_ID=			@LINE_ID ,
+             CHA_ID=			@CHA_ID ,
+             AGENT_ID=			@AGENT_ID ,
+             EXPORTER=			@EXPORTER ,
+             TRUCK_NO=			@TRUCK_NO ,
+             DRIVER_NAME=			@DRIVER_NAME ,             
+             GROSS_WT=			@GROSS_WT ,
+             PKG_TYPE=			@PKG_TYPE ,
+             PKG_NOS=			@PKG_NOS ,
+             CARGO_TYPE=			@CARGO_TYPE ,
+             CHANGED_BY=			@CHANGED_BY ,
+             CHANGE_DATE = GETDATE(),
+             CONT_SIZE=			@CONT_SIZE ,
+             SEAL_NO_1=			@SEAL_NO_1 ,
+             CONT_NOTE=			@CONT_NOTE ,
+             TRANSPORTER=			@TRANSPORTER ,
+             DAMAGE_DETAILS=			@DAMAGE_DETAILS ,
+             PLUG_REQUIREMENT=			@PLUG_REQUIREMENT ,
+             SEAL_NO_2=			@SEAL_NO_2 ,
+             LOADED_FROM=			@LOADED_FROM ,
+             CONT_TYPE=			@CONT_TYPE ,
+             MOVEMENT_TYPE=			@MOVEMENT_TYPE ,
+             MTY_CONT_WT=			@MTY_CONT_WT ,
+             BUFFER_CODE=			@BUFFER_CODE ,
+             MOVEMENT_BY=			@MOVEMENT_BY,
+			 DAMAGE_TYPE  =  @DAMAGE_TYPE,
+			 DAMAGE_CONDITION  = @DAMAGE_CONDITION ,
+			 FACTORY_ID = @FACTORY_ID    ,
+			 IN_DATE_TIME=PKG_FUNCTIONS.TO_DATE(@IN_DATE_TIME)	,
+			 INVOICE_NO = @INVOICE_NO,
+			 INVOICE_DATE = PKG_FUNCTIONS.TO_DATE(@INVOICE_DATE),
+			 SHIPPER_ID = @SHIPPER_ID
+WHERE GATE_PASS_NO= @GATE_PASS_NO
+AND location_id=	@location_id;
+
+
+
+	 DECLARE  @REFERENCE_ID  NUMERIC(18,3)
+	DECLARE  @REF_MODE  VARCHAR(1)
+	DECLARE  @PROCESS_ID  VARCHAR(50) 
+	DECLARE  @PROCESS_DATE  VARCHAR(100)
+	DECLARE  @PROCESS_BY  VARCHAR(30)
+	DECLARE  @PROCESS_REF_ID  NUMERIC(18,3)
+	DECLARE  @HISTORY_ID  INT  
+	DECLARE  @SEQ_NO  NUMERIC(18,3)
+	DECLARE  @EVENT_REMARKS  VARCHAR(500)
+	DECLARE  @AGENT_REFERENCE  VARCHAR(10)
+	
+		
+		BEGIN TRY							
+
+			SET @REF_MODE = 'E'
+			SET @PROCESS_ID = 'FACTORY STUFF GATEIN DATA CHANGED'
+			SET @PROCESS_DATE = GETDATE()
+			SET @PROCESS_BY = @CHANGED_BY
+
+			
+				SET   @REFERENCE_ID = @CONT_REF_ID
+				SET  @LOCATION_ID = @LOCATION_ID
+			SET @PROCESS_REF_ID=@CONT_REF_ID
+
+			SET @EVENT_REMARKS = 'FACTORY STUFF GATEIN DATA CHANGED FOR CONTAINER : ' + @CONT_NO
+
+			EXECUTE PKG_INSERT.CONTAINER_HISTORY @CONT_NO,
+			@CONT_SIZE,
+			@REFERENCE_ID,
+			@REF_MODE,
+			@PROCESS_ID,
+			@PROCESS_DATE,
+			@PROCESS_BY,
+			@PROCESS_REF_ID,
+			@HISTORY_ID,
+			@LINE_ID,
+			@AGENT_ID,
+			@SEQ_NO,
+			@EVENT_REMARKS,
+			@AGENT_REFERENCE,
+			@LOCATION_ID,
+			@ERRMSG
+		END TRY
+		BEGIN CATCH
+			SELECT 
+				ERROR_NUMBER() AS ErrorNumber
+				,ERROR_MESSAGE() AS ErrorMessage;
+		END CATCH
+  	
+END
+
+
+
+------------------------------------------------------------------------
+
+
+
